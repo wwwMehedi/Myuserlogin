@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Myuserlogin</string>
+    <string name="title_activity_mynewlogin">Mynewlogin</string>
+    <string name="title_activity_forgetpassword">Forgetpassword</string>
+    <string name="title_activity_home">Home</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_current_location">Map</string>
+    <string name="terms_condition"><![CDATA[Terms & Condition]]></string>
+    <string name="title_activity_parking_slot">ParkingSlotActivity</string>
+    <string name="title_activity_conversation">ConversationActivity</string>
+    <string name="title_activity_forum">ForumActivity</string>
+</resources>
