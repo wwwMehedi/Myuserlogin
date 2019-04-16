@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Myuserlogin</string>
+    <string name="app_name">NearbyPlace</string>
     <string name="title_activity_mynewlogin">Mynewlogin</string>
     <string name="title_activity_forgetpassword">Forgetpassword</string>
     <string name="title_activity_home">Home</string>

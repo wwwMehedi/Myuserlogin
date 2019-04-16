@@ -68,7 +68,9 @@
         <activity
             android:name=".ForumActivity"
             android:label="@string/title_activity_forum"
-            android:theme="@style/AppTheme"></activity>
+            android:theme="@style/AppTheme" />
+        <activity android:name=".option.ChooseItem" />
+        <activity android:name=".chooseoption.OptionSelected"></activity>
     </application>
 
 </manifest>

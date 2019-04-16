@@ -40,7 +40,7 @@ public class Myadapterclass extends RecyclerView.Adapter<Myadapterclass.Myholder
        holder.textView.setText(model.getTitle());
        holder.textViewtwo.setText(model.getAddress());
        holder.textViewthree.setText(model.getPhone());
-        holder.textViewfour.setText(model.getSlot());
+       holder.textViewfour.setText(model.getSlot());
 
     }
 

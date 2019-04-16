@@ -13,6 +13,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.sajib.myuserlogin.chooseoption.OptionSelected;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
@@ -63,12 +64,12 @@ public class Rgistration extends AppCompatActivity {
                 registrationuser();
             }
         });
-
-     firebaseAuth=FirebaseAuth.getInstance();
+        //firebaseAuth=FirebaseAuth.getInstance();
+        firebaseAuth=FirebaseAuth.getInstance();
      mDatabase= FirebaseDatabase.getInstance().getReference().child("user");
         if(firebaseAuth.getCurrentUser() != null){
             finish();
-           startActivity(new Intent(getApplicationContext(), Home.class));
+           startActivity(new Intent(getApplicationContext(), OptionSelected.class));
         }
         progressDialog = new ProgressDialog(this);
 
@@ -133,6 +134,7 @@ public class Rgistration extends AppCompatActivity {
 
                                 String user_id = firebaseAuth.getCurrentUser().getUid();
                                 DatabaseReference current_user_db = mDatabase.child(user_id);
+
                                 current_user_db.child("name").setValue(name);
                                 current_user_db.child("email").setValue(email);
                                 current_user_db.child("userID").setValue(user_id);
@@ -142,7 +144,7 @@ public class Rgistration extends AppCompatActivity {
                                 current_user_db.child("city").setValue(city);
 
                                 finish();
-                                Intent intent = new Intent(getApplicationContext(), Home.class);
+                                Intent intent = new Intent(getApplicationContext(), OptionSelected.class);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                 startActivity(intent);
                             }else{
@@ -157,7 +159,7 @@ public class Rgistration extends AppCompatActivity {
         }
     }
     public void signin(View view) {
-        Intent intent = new Intent(Rgistration.this,Rgistration.class);
+        Intent intent = new Intent(Rgistration.this,OptionSelected.class);
         startActivity(intent);
     }
 }

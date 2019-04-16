@@ -2,11 +2,13 @@ package com.example.sajib.myuserlogin;
 
 import android.*;
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -23,8 +25,11 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.sajib.myuserlogin.markaradapter.MarkerInfoWindowAdapter;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -46,6 +51,15 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+
 public class Home extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks
@@ -57,14 +71,22 @@ public class Home extends AppCompatActivity
     private GoogleApiClient client;
     private LocationRequest locationRequest;
     private Location lastlocation;
-    private Marker currentLocationMarker;
     public static final int REQUEST_LOCATION_CODE=99;
     private double GeoLat;
     private double GeoLong;
+
+    private double currentLat,currentLong;
+    private Marker currentLocationMarker;
+    private Marker marker;
+    private List<Marker> markers = new ArrayList<>();
     private  DatabaseReference mdatbase;
     private static final String TAG=Home.class.getSimpleName();
-
-
+    private Retrofit mRetrofit;
+    public static final String BASE_URL = "https://maps.googleapis.com/";
+    public static final String KEY = "AIzaSyBcz0i3t0PzJR-XHBvsTVXWTFE4I9jGxH4";
+    private ArrayList<Model> modelArrayList;
+    private LatLng listOfGeo;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +103,8 @@ public class Home extends AppCompatActivity
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        progressDialog = new ProgressDialog(this);
 
 //        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 //        fab.setOnClickListener(new View.OnClickListener() {
@@ -113,6 +137,8 @@ public class Home extends AppCompatActivity
         };//this activity for auto authentication log out concept
 
         mdatbase=FirebaseDatabase.getInstance().getReference().child("AlLocation");
+
+        //distanceMatrix("23.864992,90.4040168","23.7441373,90.3782211",KEY);
     }
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -140,12 +166,14 @@ public class Home extends AppCompatActivity
     protected void onResume() {
         super.onResume();
         // progressBar.setVisibility(View.GONE);
+
     }
 
     @Override
     public void onStart() {
         super.onStart();
         mAuth.addAuthStateListener(authListener);//log in checking
+
     }
 
     @Override
@@ -158,45 +186,110 @@ public class Home extends AppCompatActivity
               }
     }
 
-    @Override
-    public void onMapReady(final GoogleMap googleMap) {
-        mMap = googleMap;
-        Log.e(TAG,"onMapReady");
-        mdatbase.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                for(DataSnapshot dp: dataSnapshot.getChildren())
-                {
-                    Model model=dp.getValue(Model.class);
-                    GeoLat=model.getLatitude();
-                    GeoLong=model.getLongitude();
+@Override
+public void onMapReady(final GoogleMap googleMap) {
 
-                    Log.e("tag", String.valueOf(model.getLatitude()));
-                    Log.e("tag", String.valueOf(model.getLongitude()));
+    mMap = googleMap;
+    Log.e(TAG,"onMapReady");
+    mdatbase.addValueEventListener(new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+            for(DataSnapshot dp: dataSnapshot.getChildren())
+            {
+                Model model=dp.getValue(Model.class);
+                GeoLat=model.getLatitude();
+                GeoLong=model.getLongitude();
 
-                    LatLng listOfGeo = new LatLng(GeoLat, GeoLong);
-                    MarkerOptions options = new MarkerOptions()
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
-                            .title(model.getTitle()+" "+model.getAddress())
-                            .position(listOfGeo);
-                    mMap = googleMap;
-                    mMap.addMarker(options);
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(listOfGeo, 13));
+                Log.e("tag", String.valueOf(model.getLatitude()));
+                Log.e("tag", String.valueOf(model.getLongitude()));
 
-                }
+                LatLng listOfGeo = new LatLng(GeoLat, GeoLong);
+                MarkerOptions options = new MarkerOptions()
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
+                        .title(model.getTitle()+","+model.getAddress()+","+model.getSlot()+"seat")
+                        .snippet("Phone:"+model.getPhone())
+
+
+                        //.snippet(String.valueOf(obj.getLongitude())
+
+                        .position(listOfGeo);
+                mMap = googleMap;
+                mMap.addMarker(options);
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(listOfGeo, 13));
+
+                MarkerInfoWindowAdapter markerInfoWindowAdapter = new MarkerInfoWindowAdapter(getApplicationContext(), String.valueOf(currentLat),String.valueOf(currentLong));
+                //,progressDialog(paramiter)
+                googleMap.setInfoWindowAdapter(markerInfoWindowAdapter);
+                //This code is for if we click any position of marker then it shows marker position and create new marker
+
+//                googleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+//                    @Override
+//                    public void onMapClick(LatLng arg0) {
+//                       // mMap.clear();
+//                        MarkerOptions markerOptions = new MarkerOptions();
+//                        markerOptions.position(arg0);
+//                        mMap.animateCamera(CameraUpdateFactory.newLatLng(arg0));
+//                        Marker marker = mMap.addMarker(markerOptions);
+//                        marker.showInfoWindow();
+//                    }
+//                });
+
+
             }
+        }
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-        if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED) {
-            buildGoogleApiClient();
-            mMap.setMyLocationEnabled(true);
+        @Override
+        public void onCancelled(DatabaseError databaseError) {
 
         }
+    });
+    if(ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED) {
+        buildGoogleApiClient();
+        mMap.setMyLocationEnabled(true);
+
     }
+
+
+
+
+}
+
+//    public void distanceMatrix(String origins,String direction,String key) {
+//        mRetrofit = new Retrofit.Builder()
+//                .baseUrl(BASE_URL)
+//                .addConverterFactory(GsonConverterFactory.create())
+//                .build();
+//
+//        DistanceMatrixApi distanceMatrixApi = mRetrofit.create(DistanceMatrixApi.class);
+//
+//        Call<DistanceData> dataCall = distanceMatrixApi.getLatLngByAddress(origins, direction,key);
+//        dataCall.enqueue(new Callback<DistanceData>() {
+//            @Override
+//            public void onResponse(Call<DistanceData> call, Response<DistanceData> response) {
+//                try {
+//                    DistanceData distanceData = response.body();
+//                    if (distanceData.getStatus().equals("OK")) {
+//                       String text = distanceData.getRows().get(0).getElements().get(0).getDistance().getText();
+//                       String data= distanceData.getRows().get(0).getElements().get(0).getDuration().getText();
+//                        Toast.makeText(Home.this, text, Toast.LENGTH_SHORT).show();
+//                        Toast.makeText(Home.this, data, Toast.LENGTH_SHORT).show();
+//                        int distanceValue = distanceData.getRows().get(0).getElements().get(0).getDistance().getValue();
+//
+//                    } else {
+//
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//
+//            @Override
+//            public void onFailure(Call<DistanceData> call, Throwable t) {
+//                Log.i("JSON", "yahooobb  " + call);
+//
+//            }
+//        });
+//    }
 
     protected synchronized void buildGoogleApiClient(){
         client=new GoogleApiClient.Builder(this)
@@ -214,6 +307,8 @@ public class Home extends AppCompatActivity
             currentLocationMarker.remove();
         }
         LatLng latLng=new LatLng(location.getLatitude(),location.getLongitude());
+        currentLat=location.getLatitude();
+        currentLong=location.getLongitude();
         MarkerOptions markerOptions=new MarkerOptions();
         markerOptions.position(latLng);
         markerOptions.title("current location");
@@ -354,4 +449,6 @@ public class Home extends AppCompatActivity
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
+
+
 }
